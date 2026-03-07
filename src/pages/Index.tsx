@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, Heart, Shield } from "lucide-react";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   WORKOUT_DAYS,
   USER_PROFILE,
-  getNextRotation,
-  logWorkout,
-  getWorkoutLogs,
   adjustWeight,
   type Exercise,
   type WorkoutDay,
 } from "@/lib/workoutData";
+import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
+import { getBaselineImage, getExerciseImage } from "@/services/exerciseImages";
 
 type Tab = "workout" | "planning" | "profile";
 
