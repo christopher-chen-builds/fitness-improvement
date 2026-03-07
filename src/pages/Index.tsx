@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, Heart, Shield } from "lucide-react";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import {
   WORKOUT_DAYS,
   USER_PROFILE,
-  getNextRotation,
-  logWorkout,
-  getWorkoutLogs,
   adjustWeight,
   type Exercise,
   type WorkoutDay,
 } from "@/lib/workoutData";
+import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
+import { getBaselineImage, getExerciseImage } from "@/services/exerciseImages";
 
 type Tab = "workout" | "planning" | "profile";
 
@@ -56,7 +55,7 @@ const Index = () => {
   };
 
   const confirmLog = () => {
-    logWorkout({
+    logWorkoutService({
       id: Date.now().toString(),
       dayId: currentDay.id,
       dayName: currentDay.name,
@@ -187,14 +186,36 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
 
 /* ─── Exercise Card ─── */
 function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWeight: (e: Exercise) => string }) {
+  const [imgSrc, setImgSrc] = useState<string | undefined>(
+    getBaselineImage(exercise.id)
+  );
+
+  useEffect(() => {
+    if (!imgSrc) {
+      getExerciseImage(exercise.id, exercise.name).then(setImgSrc);
+    }
+  }, [exercise.id, exercise.name, imgSrc]);
+
   return (
     <div className="flex items-center bg-card rounded-xl p-3 gap-4">
-      <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center shrink-0">
-        <Dumbbell className="h-7 w-7 text-primary/70" />
+      <div className="w-16 h-16 bg-secondary rounded-lg shrink-0 overflow-hidden">
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt={exercise.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Dumbbell className="h-7 w-7 text-primary/70" />
+          </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-foreground truncate">{exercise.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{formatWeight(exercise)}</p>
+        <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate italic">{exercise.cue}</p>
       </div>
       <button className="text-muted-foreground shrink-0">
         <MoreHorizontal className="h-5 w-5" />
