@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, Heart, Shield } from "lucide-react";
+import WorkoutCalendar from "@/components/WorkoutCalendar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
