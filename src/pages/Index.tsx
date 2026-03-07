@@ -175,6 +175,12 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
       <Button onClick={onStart} className="w-full bg-primary text-primary-foreground py-6 rounded-2xl text-base font-semibold gap-2">
         <Play className="h-5 w-5 fill-current" /> Start Workout
       </Button>
+
+      {/* History Calendar */}
+      <div className="space-y-2 pt-2">
+        <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">History</p>
+        <WorkoutCalendar />
+      </div>
     </div>
   );
 }
@@ -303,6 +309,8 @@ function PlanningTab() {
 /* ─── Profile Tab ─── */
 function ProfileTab() {
   const logs = getWorkoutLogs();
+  const nextRotation = getNextRotation();
+  const nextDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
   return (
     <div className="space-y-6">
@@ -333,6 +341,12 @@ function ProfileTab() {
         ))}
       </div>
 
+      {/* Consistency Calendar */}
+      <div className="space-y-2">
+        <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Consistency</p>
+        <WorkoutCalendar />
+      </div>
+
       {logs.length > 0 && (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs uppercase tracking-wider">Recent Workouts</p>
@@ -347,6 +361,16 @@ function ProfileTab() {
           ))}
         </div>
       )}
+
+      {/* Next Up Widget */}
+      <div className="bg-card rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Next Up</p>
+          <p className="text-sm font-semibold text-primary mt-1">Next: {nextDay.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{nextDay.muscleGroups.join(", ")}</p>
+        </div>
+        <Dumbbell className="h-6 w-6 text-primary/50" />
+      </div>
     </div>
   );
 }
