@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getWorkoutLogs } from "@/lib/workoutData";
+import { getWorkoutLogs } from "@/services/workoutService";
 
 interface WorkoutCalendarProps {
   compact?: boolean;
