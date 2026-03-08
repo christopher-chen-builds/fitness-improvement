@@ -3,6 +3,7 @@ import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHori
 import { useNavigate } from "react-router-dom";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
 import ExerciseImage from "@/components/ExerciseImage";
+import EquipmentChecklist from "@/components/EquipmentChecklist";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -14,6 +15,7 @@ import {
 } from "@/lib/workoutData";
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
+import { applyEquipmentSubstitutions, getEquipmentChecklist, evaluateProgression } from "@/lib/workout-logic";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
@@ -25,11 +27,21 @@ const Index = () => {
   const [currentSet, setCurrentSet] = useState(1);
   const [sessionExercises, setSessionExercises] = useState<Exercise[]>([]);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [showEquipment, setShowEquipment] = useState(false);
+  const [equipmentVersion, setEquipmentVersion] = useState(0);
   const nextRotation = getNextRotation();
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
+  // Apply equipment substitutions to preview exercises
+  const previewExercises = applyEquipmentSubstitutions(
+    currentDay.exercises,
+    getEquipmentChecklist()
+  );
+
   const startWorkout = useCallback(() => {
-    const withOverrides = applyWeightOverrides(currentDay.exercises.map((e) => ({ ...e })));
+    const checklist = getEquipmentChecklist();
+    const substituted = applyEquipmentSubstitutions(currentDay.exercises, checklist);
+    const withOverrides = applyWeightOverrides(substituted.map((e) => ({ ...e })));
     setSessionExercises(withOverrides);
     setActiveWorkout(true);
     setCurrentExerciseIdx(0);
@@ -68,6 +80,8 @@ const Index = () => {
     setActiveWorkout(false);
     setCurrentExerciseIdx(0);
     setCurrentSet(1);
+    // Run rolling-average progression evaluation after logging
+    evaluateProgression();
   };
 
   const formatWeight = (ex: Exercise) => {
@@ -89,7 +103,14 @@ const Index = () => {
 
       <main className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-24">
         {activeTab === "workout" && !activeWorkout && (
-          <WorkoutPreview day={currentDay} formatWeight={formatWeight} onStart={startWorkout} onHistory={() => navigate("/history")} />
+          <WorkoutPreview
+            day={currentDay}
+            exercises={previewExercises}
+            formatWeight={formatWeight}
+            onStart={startWorkout}
+            onHistory={() => navigate("/history")}
+            onEquipment={() => setShowEquipment(true)}
+          />
         )}
         {activeTab === "workout" && activeWorkout && (
           <ActiveWorkout
@@ -101,7 +122,7 @@ const Index = () => {
             onComplete={completeSet}
           />
         )}
-        {activeTab === "planning" && <PlanningTab />}
+        {activeTab === "planning" && <PlanningTab onEquipment={() => setShowEquipment(true)} />}
         {activeTab === "history" && <HistoryTab />}
         {activeTab === "profile" && <ProfileTab />}
       </main>
@@ -146,16 +167,31 @@ const Index = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EquipmentChecklist
+        open={showEquipment}
+        onOpenChange={setShowEquipment}
+        onSave={() => setEquipmentVersion((v) => v + 1)}
+      />
     </div>
   );
 };
 
 /* ─── Workout Preview ─── */
-function WorkoutPreview({ day, formatWeight, onStart, onHistory }: { day: WorkoutDay; formatWeight: (e: Exercise) => string; onStart: () => void; onHistory: () => void }) {
+function WorkoutPreview({
+  day, exercises, formatWeight, onStart, onHistory, onEquipment
+}: {
+  day: WorkoutDay;
+  exercises: Exercise[];
+  formatWeight: (e: Exercise) => string;
+  onStart: () => void;
+  onHistory: () => void;
+  onEquipment: () => void;
+}) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
-        <button className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
+        <button onClick={onEquipment} className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
           <SlidersHorizontal className="h-4 w-4" /> Equipment
         </button>
         <button onClick={onHistory} className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
@@ -163,10 +199,10 @@ function WorkoutPreview({ day, formatWeight, onStart, onHistory }: { day: Workou
         </button>
       </div>
 
-      <h2 className="text-lg font-bold">{day.exercises.length} Exercises — {day.name}</h2>
+      <h2 className="text-lg font-bold">{exercises.length} Exercises — {day.name}</h2>
 
       <div className="space-y-2">
-        {day.exercises.map((ex) => (
+        {exercises.map((ex) => (
           <ExerciseCard key={ex.id} exercise={ex} formatWeight={formatWeight} />
         ))}
       </div>
@@ -200,7 +236,7 @@ function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWe
   );
 }
 
-/* ─── Active Workout (with AI image) ─── */
+/* ─── Active Workout (with AI image — keyed to current exercise) ─── */
 function ActiveWorkout({
   exercises, currentIdx, currentSet, formatWeight, onAdjust, onComplete
 }: {
@@ -220,8 +256,14 @@ function ActiveWorkout({
         <p className="text-primary font-semibold">Set {currentSet} of {ex.sets}</p>
       </div>
 
-      {/* AI-generated exercise image — uses same cache as preview cards */}
-      <ExerciseImage exerciseId={ex.id} exerciseName={ex.name} size="lg" className="rounded-2xl" />
+      {/* Key forces React to remount ExerciseImage when exercise changes */}
+      <ExerciseImage
+        key={ex.id}
+        exerciseId={ex.id}
+        exerciseName={ex.name}
+        size="lg"
+        className="rounded-2xl"
+      />
 
       <div className="bg-card rounded-2xl p-6 text-center space-y-4">
         <p className="text-4xl font-extrabold text-foreground">
@@ -260,7 +302,7 @@ function ActiveWorkout({
 }
 
 /* ─── Planning Tab ─── */
-function PlanningTab() {
+function PlanningTab({ onEquipment }: { onEquipment: () => void }) {
   return (
     <div className="space-y-6">
       {WORKOUT_DAYS.map((day) => (
@@ -283,14 +325,18 @@ function PlanningTab() {
           { icon: Calendar, label: "Routine", value: "3 Day Classic" },
           { icon: Clock, label: "Duration", value: "40 min" },
           { icon: Star, label: "Objective", value: USER_PROFILE.objective },
-          { icon: SlidersHorizontal, label: "Equipment", value: "Edit" },
+          { icon: SlidersHorizontal, label: "Equipment", value: "Edit", onClick: onEquipment },
           { icon: Zap, label: "Rep Ranges", value: "Normal" },
           { icon: Target, label: "Weekly Goal", value: USER_PROFILE.weeklyGoal },
           { icon: BarChart3, label: "Experience", value: USER_PROFILE.experience },
           { icon: Timer, label: "Rest Timer", value: USER_PROFILE.restTimer },
           { icon: Dice5, label: "Randomness", value: "50%" },
         ]).map((item) => (
-          <div key={item.label} className="flex items-center justify-between py-3">
+          <div
+            key={item.label}
+            className={`flex items-center justify-between py-3 ${item.onClick ? "cursor-pointer" : ""}`}
+            onClick={item.onClick}
+          >
             <div className="flex items-center gap-3">
               <item.icon className="h-4 w-4 text-primary" />
               <span className="text-sm text-foreground">{item.label}</span>
