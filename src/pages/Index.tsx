@@ -102,6 +102,7 @@ const Index = () => {
           />
         )}
         {activeTab === "planning" && <PlanningTab />}
+        {activeTab === "history" && <HistoryTab />}
         {activeTab === "profile" && <ProfileTab />}
       </main>
 
