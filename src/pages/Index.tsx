@@ -28,7 +28,8 @@ const Index = () => {
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
   const startWorkout = useCallback(() => {
-    setSessionExercises(currentDay.exercises.map((e) => ({ ...e })));
+    const withOverrides = applyWeightOverrides(currentDay.exercises.map((e) => ({ ...e })));
+    setSessionExercises(withOverrides);
     setActiveWorkout(true);
     setCurrentExerciseIdx(0);
     setCurrentSet(1);
