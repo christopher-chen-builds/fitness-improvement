@@ -13,7 +13,7 @@ import {
   type WorkoutDay,
 } from "@/lib/workoutData";
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
-import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
+import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
