@@ -13,7 +13,7 @@ import {
   type WorkoutDay,
 } from "@/lib/workoutData";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
-import { getBaselineImage, getExerciseImage } from "@/services/exerciseImages";
+import { generateExerciseImage, getCachedExerciseImage } from "@/services/exerciseImages";
 
 type Tab = "workout" | "planning" | "profile";
 
