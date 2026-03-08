@@ -209,13 +209,17 @@ function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWe
   return (
     <div className="flex items-center bg-card rounded-xl p-3 gap-4">
       <div className="w-16 h-16 bg-secondary rounded-lg shrink-0 overflow-hidden">
-        {imgSrc ? (
+        {imgSrc && !failed ? (
           <img
             src={imgSrc}
             alt={exercise.name}
             className="w-full h-full object-cover"
             loading="lazy"
           />
+        ) : loading ? (
+          <div className="w-full h-full flex items-center justify-center animate-pulse">
+            <Dumbbell className="h-7 w-7 text-muted-foreground/40" />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Dumbbell className="h-7 w-7 text-primary/70" />
