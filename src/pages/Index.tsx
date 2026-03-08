@@ -111,6 +111,7 @@ const Index = () => {
           {([
             { id: "workout" as Tab, icon: Dumbbell, label: "Workout" },
             { id: "planning" as Tab, icon: Calendar, label: "Planning" },
+            { id: "history" as Tab, icon: ClipboardList, label: "History" },
             { id: "profile" as Tab, icon: User, label: "Profile" },
           ]).map((tab) => (
             <button
