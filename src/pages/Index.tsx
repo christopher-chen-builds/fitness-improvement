@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, ClipboardList } from "lucide-react";
+import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, ClipboardList, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
 import ExerciseImage from "@/components/ExerciseImage";
