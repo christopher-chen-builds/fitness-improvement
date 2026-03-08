@@ -8,10 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import {
   WORKOUT_DAYS,
   USER_PROFILE,
-  adjustWeight,
   type Exercise,
   type WorkoutDay,
 } from "@/lib/workoutData";
+import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
 import { generateExerciseImage, getCachedExerciseImage } from "@/services/exerciseImages";
 

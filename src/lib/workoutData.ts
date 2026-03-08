@@ -87,27 +87,9 @@ export const WORKOUT_DAYS: WorkoutDay[] = [
   },
 ];
 
-export function getNextRotation(): number {
-  const last = localStorage.getItem("lastCompletedDay");
-  if (!last) return 1;
-  const lastDay = parseInt(last, 10);
-  return lastDay >= 3 ? 1 : lastDay + 1;
-}
-
-export function logWorkout(log: WorkoutLog) {
-  const logs = getWorkoutLogs();
-  logs.unshift(log);
-  localStorage.setItem("workoutLogs", JSON.stringify(logs));
-  localStorage.setItem("lastCompletedDay", String(log.dayId));
-}
-
-export function getWorkoutLogs(): WorkoutLog[] {
-  const raw = localStorage.getItem("workoutLogs");
-  return raw ? JSON.parse(raw) : [];
-}
-
-export function adjustWeight(weight: number, direction: "up" | "down"): number {
-  if (weight === 0) return 0;
-  const factor = direction === "up" ? 1.05 : 0.9;
-  return Math.round(weight * factor * 2) / 2; // round to nearest 0.5
-}
+// Rotation, logging, and weight adjustment logic moved to:
+//   src/lib/trainer-logic.ts   (adjustWeight, getNextRotation, weight overrides)
+//   src/services/workoutService.ts   (logWorkout, getWorkoutLogs)
+// Re-export for backwards compatibility:
+export { adjustWeight, getNextRotation } from "@/lib/trainer-logic";
+export { logWorkout, getWorkoutLogs } from "@/services/workoutService";
