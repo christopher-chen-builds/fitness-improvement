@@ -64,8 +64,15 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("AI response structure:", JSON.stringify(Object.keys(data)));
+    console.log("Choice message keys:", JSON.stringify(Object.keys(data.choices?.[0]?.message || {})));
+    
+    // Try multiple possible response paths
+    const message = data.choices?.[0]?.message;
     const imageUrl =
-      data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      message?.images?.[0]?.image_url?.url ||
+      message?.content?.[0]?.image_url?.url ||
+      (typeof message?.content === 'string' && message.content.startsWith('data:image') ? message.content : null);
 
     if (!imageUrl) {
       return new Response(
