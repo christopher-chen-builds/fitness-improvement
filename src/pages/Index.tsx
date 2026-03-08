@@ -15,7 +15,7 @@ import {
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
 
-type Tab = "workout" | "planning" | "profile";
+type Tab = "workout" | "planning" | "history" | "profile";
 
 const Index = () => {
   const navigate = useNavigate();
