@@ -71,9 +71,13 @@ export async function logWorkout(log: WorkoutLog): Promise<void> {
 }
 
 function getMuscleGroupsForDay(dayId: number): string[] {
-  const { WORKOUT_DAYS } = require("@/lib/workoutData");
-  const day = WORKOUT_DAYS.find((d: any) => d.id === dayId);
-  return day?.muscleGroups ?? [];
+  // Inline import avoided — use the static data directly
+  const DAYS: Record<number, string[]> = {
+    1: ["Chest", "Triceps"],
+    2: ["Back", "Biceps", "Abs"],
+    3: ["Legs", "Shoulders", "Back"],
+  };
+  return DAYS[dayId] ?? [];
 }
 
 export { getNextRotation } from "@/lib/trainer-logic";
