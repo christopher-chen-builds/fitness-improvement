@@ -14,7 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercise_logs: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          exercise_name: string
+          id: string
+          per_hand: boolean
+          reps: number
+          sets_completed: number
+          unit: string
+          weight: number
+          weight_change_flag: string | null
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          exercise_name: string
+          id?: string
+          per_hand?: boolean
+          reps: number
+          sets_completed: number
+          unit?: string
+          weight?: number
+          weight_change_flag?: string | null
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          exercise_name?: string
+          id?: string
+          per_hand?: boolean
+          reps?: number
+          sets_completed?: number
+          unit?: string
+          weight?: number
+          weight_change_flag?: string | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_logs_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          date: string
+          day_id: number
+          day_name: string
+          duration_minutes: number | null
+          id: string
+          muscle_groups: string[]
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          day_id: number
+          day_name: string
+          duration_minutes?: number | null
+          id?: string
+          muscle_groups?: string[]
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          day_id?: number
+          day_name?: string
+          duration_minutes?: number | null
+          id?: string
+          muscle_groups?: string[]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

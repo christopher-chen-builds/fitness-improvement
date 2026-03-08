@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
-import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, Heart, Shield } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, ClipboardList } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
+import ExerciseImage from "@/components/ExerciseImage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import {
   WORKOUT_DAYS,
   USER_PROFILE,
@@ -13,11 +14,11 @@ import {
 } from "@/lib/workoutData";
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
-import { generateExerciseImage, getCachedExerciseImage } from "@/services/exerciseImages";
 
 type Tab = "workout" | "planning" | "profile";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("workout");
   const [activeWorkout, setActiveWorkout] = useState(false);
   const [currentExerciseIdx, setCurrentExerciseIdx] = useState(0);
@@ -55,8 +56,8 @@ const Index = () => {
     }
   };
 
-  const confirmLog = () => {
-    logWorkoutService({
+  const confirmLog = async () => {
+    await logWorkoutService({
       id: Date.now().toString(),
       dayId: currentDay.id,
       dayName: currentDay.name,
@@ -76,7 +77,6 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground max-w-md mx-auto relative overflow-hidden">
-      {/* Header */}
       <header className="flex items-center justify-center py-4 px-4 relative shrink-0">
         <div className="text-center">
           <h1 className="text-xl font-bold tracking-tight">
@@ -87,10 +87,9 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Content */}
       <main className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-24">
         {activeTab === "workout" && !activeWorkout && (
-          <WorkoutPreview day={currentDay} formatWeight={formatWeight} onStart={startWorkout} />
+          <WorkoutPreview day={currentDay} formatWeight={formatWeight} onStart={startWorkout} onHistory={() => navigate("/history")} />
         )}
         {activeTab === "workout" && activeWorkout && (
           <ActiveWorkout
@@ -106,7 +105,6 @@ const Index = () => {
         {activeTab === "profile" && <ProfileTab />}
       </main>
 
-      {/* Bottom Nav */}
       <nav className="absolute bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border">
         <div className="flex items-center justify-around py-2 pb-4">
           {([
@@ -128,7 +126,6 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* Log Modal */}
       <Dialog open={showLogModal} onOpenChange={setShowLogModal}>
         <DialogContent className="bg-card border-border max-w-sm mx-auto">
           <DialogHeader>
@@ -152,15 +149,15 @@ const Index = () => {
 };
 
 /* ─── Workout Preview ─── */
-function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; formatWeight: (e: Exercise) => string; onStart: () => void }) {
+function WorkoutPreview({ day, formatWeight, onStart, onHistory }: { day: WorkoutDay; formatWeight: (e: Exercise) => string; onStart: () => void; onHistory: () => void }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-3">
         <button className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
           <SlidersHorizontal className="h-4 w-4" /> Equipment
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
-          <Plus className="h-4 w-4" /> Muscle Groups
+        <button onClick={onHistory} className="flex-1 flex items-center justify-center gap-2 bg-secondary rounded-xl py-3 text-sm font-medium text-secondary-foreground">
+          <ClipboardList className="h-4 w-4" /> History
         </button>
       </div>
 
@@ -176,7 +173,6 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
         <Play className="h-5 w-5 fill-current" /> Start Workout
       </Button>
 
-      {/* History Calendar */}
       <div className="space-y-2 pt-2">
         <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">History</p>
         <WorkoutCalendar />
@@ -185,48 +181,11 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
   );
 }
 
-/* ─── Exercise Card ─── */
+/* ─── Exercise Card (preview) ─── */
 function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWeight: (e: Exercise) => string }) {
-  const [imgSrc, setImgSrc] = useState<string | null>(
-    getCachedExerciseImage(exercise.id)
-  );
-  const [loading, setLoading] = useState(!imgSrc);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (!imgSrc && !failed) {
-      setLoading(true);
-      generateExerciseImage(exercise.id, exercise.name).then((url) => {
-        if (url) {
-          setImgSrc(url);
-        } else {
-          setFailed(true);
-        }
-        setLoading(false);
-      });
-    }
-  }, [exercise.id, exercise.name, imgSrc, failed]);
-
   return (
     <div className="flex items-center bg-card rounded-xl p-3 gap-4">
-      <div className="w-16 h-16 bg-secondary rounded-lg shrink-0 overflow-hidden">
-        {imgSrc && !failed ? (
-          <img
-            src={imgSrc}
-            alt={exercise.name}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : loading ? (
-          <div className="w-full h-full flex items-center justify-center animate-pulse">
-            <Dumbbell className="h-7 w-7 text-muted-foreground/40" />
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Dumbbell className="h-7 w-7 text-primary/70" />
-          </div>
-        )}
-      </div>
+      <ExerciseImage exerciseId={exercise.id} exerciseName={exercise.name} size="sm" className="shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-foreground truncate">{exercise.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{formatWeight(exercise)}</p>
@@ -239,7 +198,7 @@ function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWe
   );
 }
 
-/* ─── Active Workout ─── */
+/* ─── Active Workout (with AI image) ─── */
 function ActiveWorkout({
   exercises, currentIdx, currentSet, formatWeight, onAdjust, onComplete
 }: {
@@ -258,6 +217,9 @@ function ActiveWorkout({
         <h2 className="text-2xl font-bold text-foreground">{ex.name}</h2>
         <p className="text-primary font-semibold">Set {currentSet} of {ex.sets}</p>
       </div>
+
+      {/* AI-generated exercise image — uses same cache as preview cards */}
+      <ExerciseImage exerciseId={ex.id} exerciseName={ex.name} size="lg" className="rounded-2xl" />
 
       <div className="bg-card rounded-2xl p-6 text-center space-y-4">
         <p className="text-4xl font-extrabold text-foreground">
@@ -286,7 +248,6 @@ function ActiveWorkout({
         <Check className="h-5 w-5" /> Complete Set
       </Button>
 
-      {/* Progress */}
       <div className="flex gap-1.5 justify-center">
         {exercises.map((_, i) => (
           <div key={i} className={`h-1.5 rounded-full transition-all ${i < currentIdx ? "w-6 bg-primary" : i === currentIdx ? "w-6 bg-primary/60" : "w-3 bg-secondary"}`} />
@@ -313,9 +274,7 @@ function PlanningTab() {
           </div>
         </div>
       ))}
-
       <p className="text-primary text-sm font-medium">+ Day 4</p>
-
       <div className="space-y-1 pt-4">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-3">Training</p>
         {([
@@ -377,7 +336,6 @@ function ProfileTab() {
         ))}
       </div>
 
-      {/* Consistency Calendar */}
       <div className="space-y-2">
         <p className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Consistency</p>
         <WorkoutCalendar />
@@ -398,7 +356,6 @@ function ProfileTab() {
         </div>
       )}
 
-      {/* Next Up Widget */}
       <div className="bg-card rounded-2xl p-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Next Up</p>
