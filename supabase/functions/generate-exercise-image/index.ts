@@ -22,7 +22,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const prompt = `Generate an image of a person performing the "${exerciseName}" exercise. Professional fitness exercise demonstration, minimalist high-contrast aesthetic, studio lighting, clean background, high-quality, professional sports photography. On a clean background.`;
+    const prompt = `Generate an image of the "${exerciseName}" exercise. Professional 3D medical-style fitness illustration, white glowing figure on deep black background, highlighting specific muscle groups in blue #007AFF, high-contrast, minimalist, 8k resolution. On a solid black background.`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
