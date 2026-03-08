@@ -13,7 +13,7 @@ import {
   type WorkoutDay,
 } from "@/lib/workoutData";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation } from "@/services/workoutService";
-import { getBaselineImage, getExerciseImage } from "@/services/exerciseImages";
+import { generateExerciseImage, getCachedExerciseImage } from "@/services/exerciseImages";
 
 type Tab = "workout" | "planning" | "profile";
 
@@ -186,26 +186,40 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
 
 /* ─── Exercise Card ─── */
 function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWeight: (e: Exercise) => string }) {
-  const [imgSrc, setImgSrc] = useState<string | undefined>(
-    getBaselineImage(exercise.id)
+  const [imgSrc, setImgSrc] = useState<string | null>(
+    getCachedExerciseImage(exercise.id)
   );
+  const [loading, setLoading] = useState(!imgSrc);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!imgSrc) {
-      getExerciseImage(exercise.id, exercise.name).then(setImgSrc);
+    if (!imgSrc && !failed) {
+      setLoading(true);
+      generateExerciseImage(exercise.id, exercise.name).then((url) => {
+        if (url) {
+          setImgSrc(url);
+        } else {
+          setFailed(true);
+        }
+        setLoading(false);
+      });
     }
-  }, [exercise.id, exercise.name, imgSrc]);
+  }, [exercise.id, exercise.name, imgSrc, failed]);
 
   return (
     <div className="flex items-center bg-card rounded-xl p-3 gap-4">
       <div className="w-16 h-16 bg-secondary rounded-lg shrink-0 overflow-hidden">
-        {imgSrc ? (
+        {imgSrc && !failed ? (
           <img
             src={imgSrc}
             alt={exercise.name}
             className="w-full h-full object-cover"
             loading="lazy"
           />
+        ) : loading ? (
+          <div className="w-full h-full flex items-center justify-center animate-pulse">
+            <Dumbbell className="h-7 w-7 text-muted-foreground/40" />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Dumbbell className="h-7 w-7 text-primary/70" />
