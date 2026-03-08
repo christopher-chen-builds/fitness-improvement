@@ -186,15 +186,25 @@ function WorkoutPreview({ day, formatWeight, onStart }: { day: WorkoutDay; forma
 
 /* ─── Exercise Card ─── */
 function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWeight: (e: Exercise) => string }) {
-  const [imgSrc, setImgSrc] = useState<string | undefined>(
-    getBaselineImage(exercise.id)
+  const [imgSrc, setImgSrc] = useState<string | null>(
+    getCachedExerciseImage(exercise.id)
   );
+  const [loading, setLoading] = useState(!imgSrc);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!imgSrc) {
-      getExerciseImage(exercise.id, exercise.name).then(setImgSrc);
+    if (!imgSrc && !failed) {
+      setLoading(true);
+      generateExerciseImage(exercise.id, exercise.name).then((url) => {
+        if (url) {
+          setImgSrc(url);
+        } else {
+          setFailed(true);
+        }
+        setLoading(false);
+      });
     }
-  }, [exercise.id, exercise.name, imgSrc]);
+  }, [exercise.id, exercise.name, imgSrc, failed]);
 
   return (
     <div className="flex items-center bg-card rounded-xl p-3 gap-4">
