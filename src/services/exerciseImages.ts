@@ -1,19 +1,17 @@
 /**
  * AI-powered exercise image generation service.
- * Uses Lovable AI gateway via edge function.
+ * Uses a backend edge function (configurable AI endpoint).
  * Caches results in localStorage to minimize API calls.
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { config } from "@/lib/config";
 
 const CACHE_PREFIX = "exercise-img-";
 
 // In-flight request deduplication
 const pendingRequests = new Map<string, Promise<string | null>>();
 
-/**
- * Get a cached image URL from localStorage.
- */
 function getCachedImage(exerciseId: string): string | null {
   try {
     return localStorage.getItem(CACHE_PREFIX + exerciseId);
@@ -22,9 +20,6 @@ function getCachedImage(exerciseId: string): string | null {
   }
 }
 
-/**
- * Save an image URL to localStorage cache.
- */
 function setCachedImage(exerciseId: string, url: string): void {
   try {
     localStorage.setItem(CACHE_PREFIX + exerciseId, url);
@@ -42,6 +37,9 @@ export async function generateExerciseImage(
   exerciseId: string,
   exerciseName: string
 ): Promise<string | null> {
+  // Skip if AI images are disabled via env var
+  if (!config.features.aiImages) return null;
+
   // 1. Check localStorage cache
   const cached = getCachedImage(exerciseId);
   if (cached) return cached;
@@ -63,7 +61,6 @@ export async function generateExerciseImage(
         return null;
       }
 
-      // Cache for future use
       setCachedImage(exerciseId, data.imageUrl);
       return data.imageUrl;
     } catch (err) {

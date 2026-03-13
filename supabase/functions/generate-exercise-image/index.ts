@@ -19,31 +19,33 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    // AI endpoint is configurable via env var for self-hosting.
+    // Default: Lovable AI gateway. Override with any OpenAI-compatible endpoint.
+    const AI_API_URL = Deno.env.get("AI_API_URL") || "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    const AI_MODEL = Deno.env.get("AI_IMAGE_MODEL") || "google/gemini-2.5-flash-image";
+
+    if (!AI_API_KEY) throw new Error("AI_API_KEY (or LOVABLE_API_KEY) not configured");
 
     const prompt = `Generate an image of the "${exerciseName}" exercise. Professional 3D medical-style fitness illustration, white glowing figure on deep black background, highlighting specific muscle groups in blue #007AFF, high-contrast, minimalist, 8k resolution. On a solid black background.`;
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-image",
-          messages: [{ role: "user", content: prompt }],
-          modalities: ["image", "text"],
-        }),
-      }
-    );
+    const response = await fetch(AI_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${AI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
 
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI gateway error:", response.status, errText);
-      
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited. Please try again later." }),
@@ -66,8 +68,8 @@ serve(async (req) => {
     const data = await response.json();
     console.log("AI response structure:", JSON.stringify(Object.keys(data)));
     console.log("Choice message keys:", JSON.stringify(Object.keys(data.choices?.[0]?.message || {})));
-    
-    // Try multiple possible response paths
+
+    // Try multiple possible response paths (OpenAI-compatible formats)
     const message = data.choices?.[0]?.message;
     const imageUrl =
       message?.images?.[0]?.image_url?.url ||
