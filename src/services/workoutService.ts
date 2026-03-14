@@ -32,7 +32,14 @@ export async function logWorkout(log: WorkoutLog): Promise<void> {
     }
   });
 
-  // 3. Database persistence (async, best-effort)
+  // 3. Get current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.warn("No authenticated user — skipping DB persistence");
+    return;
+  }
+
+  // 4. Database persistence (async, best-effort)
   try {
     const muscleGroups = getMuscleGroupsForDay(log.dayId);
     const { data: workout, error: wErr } = await supabase
@@ -42,6 +49,7 @@ export async function logWorkout(log: WorkoutLog): Promise<void> {
         day_name: log.dayName,
         date: log.date,
         muscle_groups: muscleGroups,
+        user_id: user.id,
       })
       .select("id")
       .single();
@@ -61,6 +69,7 @@ export async function logWorkout(log: WorkoutLog): Promise<void> {
       unit: ex.unit,
       per_hand: ex.perHand ?? false,
       weight_change_flag: weightFlags[ex.id] || null,
+      user_id: user.id,
     }));
 
     const { error: eErr } = await supabase.from("exercise_logs").insert(exerciseLogs);
@@ -71,7 +80,6 @@ export async function logWorkout(log: WorkoutLog): Promise<void> {
 }
 
 function getMuscleGroupsForDay(dayId: number): string[] {
-  // Inline import avoided — use the static data directly
   const DAYS: Record<number, string[]> = {
     1: ["Chest", "Triceps"],
     2: ["Back", "Biceps", "Abs"],

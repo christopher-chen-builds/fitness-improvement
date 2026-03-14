@@ -24,6 +24,7 @@ export type Database = {
           reps: number
           sets_completed: number
           unit: string
+          user_id: string | null
           weight: number
           weight_change_flag: string | null
           workout_id: string
@@ -37,6 +38,7 @@ export type Database = {
           reps: number
           sets_completed: number
           unit?: string
+          user_id?: string | null
           weight?: number
           weight_change_flag?: string | null
           workout_id: string
@@ -50,6 +52,7 @@ export type Database = {
           reps?: number
           sets_completed?: number
           unit?: string
+          user_id?: string | null
           weight?: number
           weight_change_flag?: string | null
           workout_id?: string
@@ -64,6 +67,30 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           created_at: string
@@ -73,6 +100,7 @@ export type Database = {
           duration_minutes: number | null
           id: string
           muscle_groups: string[]
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -82,6 +110,7 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           muscle_groups?: string[]
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -91,6 +120,7 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           muscle_groups?: string[]
+          user_id?: string | null
         }
         Relationships: []
       }
