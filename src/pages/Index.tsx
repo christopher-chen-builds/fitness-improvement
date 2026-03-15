@@ -462,17 +462,24 @@ function HistoryTab() {
 
 /* ─── Profile Tab ─── */
 function ProfileTab() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const logs = getWorkoutLogs();
   const nextRotation = getNextRotation();
   const nextDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <div className="space-y-6">
       <div className="bg-card rounded-2xl p-5 text-center space-y-3">
         <div className="w-16 h-16 bg-secondary rounded-full mx-auto flex items-center justify-center">
-          <User className="h-8 w-8 text-primary" />
+          <Mail className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-lg font-bold">{USER_PROFILE.name}</h2>
+        <h2 className="text-lg font-bold text-foreground">{user?.email ?? "User"}</h2>
         <p className="text-xs text-muted-foreground">{USER_PROFILE.objective} • {USER_PROFILE.experience}</p>
       </div>
 
@@ -523,6 +530,14 @@ function ProfileTab() {
         </div>
         <Dumbbell className="h-6 w-6 text-primary/50" />
       </div>
+
+      <Button
+        variant="outline"
+        onClick={handleSignOut}
+        className="w-full gap-2 border-destructive/50 text-destructive hover:bg-destructive/10"
+      >
+        <LogOut className="h-4 w-4" /> Sign Out
+      </Button>
     </div>
   );
 }
