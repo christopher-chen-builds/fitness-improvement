@@ -17,6 +17,7 @@ import {
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
 import { applyEquipmentSubstitutions, getEquipmentChecklist, evaluateProgression } from "@/lib/workout-logic";
+import { generateMixedWorkout } from "@/services/mixWorkoutService";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
