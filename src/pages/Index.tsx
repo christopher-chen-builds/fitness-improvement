@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
-import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, ClipboardList, TrendingUp } from "lucide-react";
+import { Dumbbell, Calendar, User, Play, ChevronUp, ChevronDown, Check, MoreHorizontal, SlidersHorizontal, Plus, Star, Clock, Target, BarChart3, Timer, Dice5, Zap, Weight, Ruler, Globe, Wrench, ClipboardList, TrendingUp, LogOut, Mail, Shuffle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import WorkoutCalendar from "@/components/WorkoutCalendar";
 import ExerciseImage from "@/components/ExerciseImage";
@@ -16,6 +17,7 @@ import {
 import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
 import { applyEquipmentSubstitutions, getEquipmentChecklist, evaluateProgression } from "@/lib/workout-logic";
+import { generateMixedWorkout } from "@/services/mixWorkoutService";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
@@ -29,24 +31,41 @@ const Index = () => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showEquipment, setShowEquipment] = useState(false);
   const [equipmentVersion, setEquipmentVersion] = useState(0);
+  const [mixing, setMixing] = useState(false);
+  const [mixedExercises, setMixedExercises] = useState<Exercise[] | null>(null);
   const nextRotation = getNextRotation();
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
   // Apply equipment substitutions to preview exercises
-  const previewExercises = applyEquipmentSubstitutions(
-    currentDay.exercises,
-    getEquipmentChecklist()
-  );
+  const previewExercises = mixedExercises
+    ? mixedExercises
+    : applyEquipmentSubstitutions(currentDay.exercises, getEquipmentChecklist());
+
+  const handleMixItUp = useCallback(async () => {
+    setMixing(true);
+    try {
+      const mixed = await generateMixedWorkout(currentDay);
+      setMixedExercises(mixed);
+    } catch {
+      console.warn("Mix it up failed");
+    } finally {
+      setMixing(false);
+    }
+  }, [currentDay]);
+
+  const handleResetMix = useCallback(() => {
+    setMixedExercises(null);
+  }, []);
 
   const startWorkout = useCallback(() => {
     const checklist = getEquipmentChecklist();
-    const substituted = applyEquipmentSubstitutions(currentDay.exercises, checklist);
-    const withOverrides = applyWeightOverrides(substituted.map((e) => ({ ...e })));
+    const base = mixedExercises ?? applyEquipmentSubstitutions(currentDay.exercises, checklist);
+    const withOverrides = applyWeightOverrides(base.map((e) => ({ ...e })));
     setSessionExercises(withOverrides);
     setActiveWorkout(true);
     setCurrentExerciseIdx(0);
     setCurrentSet(1);
-  }, [currentDay]);
+  }, [currentDay, mixedExercises]);
 
   const adjustCurrentWeight = (dir: "up" | "down") => {
     setSessionExercises((prev) =>
@@ -110,6 +129,10 @@ const Index = () => {
             onStart={startWorkout}
             onHistory={() => navigate("/history")}
             onEquipment={() => setShowEquipment(true)}
+            onMixItUp={handleMixItUp}
+            onResetMix={handleResetMix}
+            mixing={mixing}
+            isMixed={!!mixedExercises}
           />
         )}
         {activeTab === "workout" && activeWorkout && (
@@ -179,7 +202,7 @@ const Index = () => {
 
 /* ─── Workout Preview ─── */
 function WorkoutPreview({
-  day, exercises, formatWeight, onStart, onHistory, onEquipment
+  day, exercises, formatWeight, onStart, onHistory, onEquipment, onMixItUp, onResetMix, mixing, isMixed
 }: {
   day: WorkoutDay;
   exercises: Exercise[];
@@ -187,6 +210,10 @@ function WorkoutPreview({
   onStart: () => void;
   onHistory: () => void;
   onEquipment: () => void;
+  onMixItUp: () => void;
+  onResetMix: () => void;
+  mixing: boolean;
+  isMixed: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -199,7 +226,32 @@ function WorkoutPreview({
         </button>
       </div>
 
-      <h2 className="text-lg font-bold">{exercises.length} Exercises — {day.name}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">{exercises.length} Exercises — {day.name}</h2>
+        <div className="flex gap-2">
+          {isMixed && (
+            <Button variant="ghost" size="sm" onClick={onResetMix} className="text-xs text-muted-foreground">
+              Reset
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onMixItUp}
+            disabled={mixing}
+            className="gap-1 text-xs border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Shuffle className={`h-3.5 w-3.5 ${mixing ? "animate-spin" : ""}`} />
+            {mixing ? "Mixing…" : "Mix It Up"}
+          </Button>
+        </div>
+      </div>
+
+      {isMixed && (
+        <Badge className="bg-primary/20 text-primary border-0 text-xs">
+          ✨ AI-generated variation
+        </Badge>
+      )}
 
       <div className="space-y-2">
         {exercises.map((ex) => (
@@ -461,17 +513,24 @@ function HistoryTab() {
 
 /* ─── Profile Tab ─── */
 function ProfileTab() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const logs = getWorkoutLogs();
   const nextRotation = getNextRotation();
   const nextDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <div className="space-y-6">
       <div className="bg-card rounded-2xl p-5 text-center space-y-3">
         <div className="w-16 h-16 bg-secondary rounded-full mx-auto flex items-center justify-center">
-          <User className="h-8 w-8 text-primary" />
+          <Mail className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-lg font-bold">{USER_PROFILE.name}</h2>
+        <h2 className="text-lg font-bold text-foreground">{user?.email ?? "User"}</h2>
         <p className="text-xs text-muted-foreground">{USER_PROFILE.objective} • {USER_PROFILE.experience}</p>
       </div>
 
@@ -522,6 +581,14 @@ function ProfileTab() {
         </div>
         <Dumbbell className="h-6 w-6 text-primary/50" />
       </div>
+
+      <Button
+        variant="outline"
+        onClick={handleSignOut}
+        className="w-full gap-2 border-destructive/50 text-destructive hover:bg-destructive/10"
+      >
+        <LogOut className="h-4 w-4" /> Sign Out
+      </Button>
     </div>
   );
 }
