@@ -37,20 +37,35 @@ const Index = () => {
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
   // Apply equipment substitutions to preview exercises
-  const previewExercises = applyEquipmentSubstitutions(
-    currentDay.exercises,
-    getEquipmentChecklist()
-  );
+  const previewExercises = mixedExercises
+    ? mixedExercises
+    : applyEquipmentSubstitutions(currentDay.exercises, getEquipmentChecklist());
+
+  const handleMixItUp = useCallback(async () => {
+    setMixing(true);
+    try {
+      const mixed = await generateMixedWorkout(currentDay);
+      setMixedExercises(mixed);
+    } catch {
+      console.warn("Mix it up failed");
+    } finally {
+      setMixing(false);
+    }
+  }, [currentDay]);
+
+  const handleResetMix = useCallback(() => {
+    setMixedExercises(null);
+  }, []);
 
   const startWorkout = useCallback(() => {
     const checklist = getEquipmentChecklist();
-    const substituted = applyEquipmentSubstitutions(currentDay.exercises, checklist);
-    const withOverrides = applyWeightOverrides(substituted.map((e) => ({ ...e })));
+    const base = mixedExercises ?? applyEquipmentSubstitutions(currentDay.exercises, checklist);
+    const withOverrides = applyWeightOverrides(base.map((e) => ({ ...e })));
     setSessionExercises(withOverrides);
     setActiveWorkout(true);
     setCurrentExerciseIdx(0);
     setCurrentSet(1);
-  }, [currentDay]);
+  }, [currentDay, mixedExercises]);
 
   const adjustCurrentWeight = (dir: "up" | "down") => {
     setSessionExercises((prev) =>
