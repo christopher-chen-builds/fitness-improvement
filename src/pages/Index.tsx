@@ -129,6 +129,10 @@ const Index = () => {
             onStart={startWorkout}
             onHistory={() => navigate("/history")}
             onEquipment={() => setShowEquipment(true)}
+            onMixItUp={handleMixItUp}
+            onResetMix={handleResetMix}
+            mixing={mixing}
+            isMixed={!!mixedExercises}
           />
         )}
         {activeTab === "workout" && activeWorkout && (
