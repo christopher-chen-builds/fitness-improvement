@@ -31,6 +31,8 @@ const Index = () => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showEquipment, setShowEquipment] = useState(false);
   const [equipmentVersion, setEquipmentVersion] = useState(0);
+  const [mixing, setMixing] = useState(false);
+  const [mixedExercises, setMixedExercises] = useState<Exercise[] | null>(null);
   const nextRotation = getNextRotation();
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
