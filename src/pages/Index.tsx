@@ -202,7 +202,7 @@ const Index = () => {
 
 /* ─── Workout Preview ─── */
 function WorkoutPreview({
-  day, exercises, formatWeight, onStart, onHistory, onEquipment
+  day, exercises, formatWeight, onStart, onHistory, onEquipment, onMixItUp, onResetMix, mixing, isMixed
 }: {
   day: WorkoutDay;
   exercises: Exercise[];
@@ -210,6 +210,10 @@ function WorkoutPreview({
   onStart: () => void;
   onHistory: () => void;
   onEquipment: () => void;
+  onMixItUp: () => void;
+  onResetMix: () => void;
+  mixing: boolean;
+  isMixed: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -222,7 +226,32 @@ function WorkoutPreview({
         </button>
       </div>
 
-      <h2 className="text-lg font-bold">{exercises.length} Exercises — {day.name}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">{exercises.length} Exercises — {day.name}</h2>
+        <div className="flex gap-2">
+          {isMixed && (
+            <Button variant="ghost" size="sm" onClick={onResetMix} className="text-xs text-muted-foreground">
+              Reset
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onMixItUp}
+            disabled={mixing}
+            className="gap-1 text-xs border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Shuffle className={`h-3.5 w-3.5 ${mixing ? "animate-spin" : ""}`} />
+            {mixing ? "Mixing…" : "Mix It Up"}
+          </Button>
+        </div>
+      </div>
+
+      {isMixed && (
+        <Badge className="bg-primary/20 text-primary border-0 text-xs">
+          ✨ AI-generated variation
+        </Badge>
+      )}
 
       <div className="space-y-2">
         {exercises.map((ex) => (
