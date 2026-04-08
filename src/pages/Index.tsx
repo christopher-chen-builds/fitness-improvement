@@ -172,6 +172,7 @@ const Index = () => {
             onResetMix={handleResetMix}
             mixing={mixing}
             isMixed={!!mixedExercises}
+            swappedIds={swappedIds}
           />
         )}
         {activeTab === "workout" && activeWorkout && (
