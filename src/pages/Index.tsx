@@ -18,6 +18,7 @@ import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
 import { applyEquipmentSubstitutions, getEquipmentChecklist, evaluateProgression } from "@/lib/workout-logic";
 import { generateMixedWorkout } from "@/services/mixWorkoutService";
+import { MIXIN_REPOSITORY } from "@/lib/mixinData";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
@@ -41,20 +42,57 @@ const Index = () => {
     ? mixedExercises
     : applyEquipmentSubstitutions(currentDay.exercises, getEquipmentChecklist());
 
-  const handleMixItUp = useCallback(async () => {
-    setMixing(true);
-    try {
-      const mixed = await generateMixedWorkout(currentDay);
-      setMixedExercises(mixed);
-    } catch {
-      console.warn("Mix it up failed");
-    } finally {
-      setMixing(false);
+  const localMixItUp = useCallback(() => {
+    // Always reset to baseline first, then perform a fresh swap
+    const baseline = [...currentDay.exercises];
+    const swapCount = Math.random() < 0.5 ? 1 : 2;
+    const indices = Array.from({ length: baseline.length }, (_, i) => i);
+    // Shuffle indices and pick swapCount
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
     }
+    const toSwap = indices.slice(0, swapCount);
+    const newSwappedIds = new Set<string>();
+
+    const mixed = baseline.map((ex, idx) => {
+      if (!toSwap.includes(idx)) return ex;
+
+      // Find the muscle group for this exercise
+      const muscleGroup = currentDay.muscleGroups.find((mg) => {
+        const mgLower = mg.toLowerCase();
+        return MIXIN_REPOSITORY.some(
+          (cat) =>
+            (cat.category.toLowerCase() === mgLower ||
+              (mgLower === "triceps" && cat.category === "Arms") ||
+              (mgLower === "biceps" && cat.category === "Arms")) &&
+            cat.exercises.length > 0
+        );
+      });
+
+      if (!muscleGroup) return ex;
+
+      const matchingCat = MIXIN_REPOSITORY.find(
+        (cat) =>
+          cat.category.toLowerCase() === muscleGroup.toLowerCase() ||
+          (muscleGroup === "Triceps" && cat.category === "Arms") ||
+          (muscleGroup === "Biceps" && cat.category === "Arms")
+      );
+
+      if (!matchingCat || matchingCat.exercises.length === 0) return ex;
+
+      const replacement = matchingCat.exercises[Math.floor(Math.random() * matchingCat.exercises.length)];
+      newSwappedIds.add(replacement.id);
+      return replacement;
+    });
+
+    setMixedExercises(mixed);
+    setSwappedIds(newSwappedIds);
   }, [currentDay]);
 
   const handleResetMix = useCallback(() => {
     setMixedExercises(null);
+    setSwappedIds(new Set());
   }, []);
 
   const startWorkout = useCallback(() => {
