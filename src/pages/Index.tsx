@@ -242,7 +242,7 @@ const Index = () => {
 
 /* ─── Workout Preview ─── */
 function WorkoutPreview({
-  day, exercises, formatWeight, onStart, onHistory, onEquipment, onMixItUp, onResetMix, mixing, isMixed
+  day, exercises, formatWeight, onStart, onHistory, onEquipment, onMixItUp, onResetMix, mixing, isMixed, swappedIds
 }: {
   day: WorkoutDay;
   exercises: Exercise[];
@@ -254,6 +254,7 @@ function WorkoutPreview({
   onResetMix: () => void;
   mixing: boolean;
   isMixed: boolean;
+  swappedIds: Set<string>;
 }) {
   return (
     <div className="space-y-4">
@@ -295,7 +296,7 @@ function WorkoutPreview({
 
       <div className="space-y-2">
         {exercises.map((ex) => (
-          <ExerciseCard key={ex.id} exercise={ex} formatWeight={formatWeight} />
+          <ExerciseCard key={ex.id} exercise={ex} formatWeight={formatWeight} isSwapped={swappedIds.has(ex.id)} />
         ))}
       </div>
 
@@ -312,12 +313,19 @@ function WorkoutPreview({
 }
 
 /* ─── Exercise Card (preview) ─── */
-function ExerciseCard({ exercise, formatWeight }: { exercise: Exercise; formatWeight: (e: Exercise) => string }) {
+function ExerciseCard({ exercise, formatWeight, isSwapped = false }: { exercise: Exercise; formatWeight: (e: Exercise) => string; isSwapped?: boolean }) {
   return (
-    <div className="flex items-center bg-card rounded-xl p-3 gap-4">
+    <div className={`flex items-center bg-card rounded-xl p-3 gap-4 transition-all ${isSwapped ? "ring-1 ring-primary/40" : ""}`}>
       <ExerciseImage exerciseId={exercise.id} exerciseName={exercise.name} size="sm" className="shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-foreground truncate">{exercise.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-sm text-foreground truncate">{exercise.name}</p>
+          {isSwapped && (
+            <Badge className="bg-primary/20 text-primary border-0 text-[10px] px-1.5 py-0 shrink-0">
+              <Shuffle className="h-2.5 w-2.5 mr-0.5" /> Swapped
+            </Badge>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground mt-0.5">{formatWeight(exercise)}</p>
         <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate italic">{exercise.cue}</p>
       </div>
