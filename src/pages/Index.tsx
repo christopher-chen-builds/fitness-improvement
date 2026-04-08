@@ -34,6 +34,7 @@ const Index = () => {
   const [equipmentVersion, setEquipmentVersion] = useState(0);
   const [mixing, setMixing] = useState(false);
   const [mixedExercises, setMixedExercises] = useState<Exercise[] | null>(null);
+  const [swappedIds, setSwappedIds] = useState<Set<string>>(new Set());
   const nextRotation = getNextRotation();
   const currentDay = WORKOUT_DAYS.find((d) => d.id === nextRotation)!;
 
@@ -167,7 +168,7 @@ const Index = () => {
             onStart={startWorkout}
             onHistory={() => navigate("/history")}
             onEquipment={() => setShowEquipment(true)}
-            onMixItUp={handleMixItUp}
+            onMixItUp={localMixItUp}
             onResetMix={handleResetMix}
             mixing={mixing}
             isMixed={!!mixedExercises}
