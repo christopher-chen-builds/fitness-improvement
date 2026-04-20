@@ -77,6 +77,8 @@ export default function AdminExerciseImages() {
   const total = rows.length;
   const ready = rows.filter((r) => r.image_url).length;
   const missing = total - ready;
+  const isWorking = working !== null;
+  const progressPct = total === 0 ? 0 : Math.round((ready / total) * 100);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -90,9 +92,15 @@ export default function AdminExerciseImages() {
           <div className="flex-1">
             <h1 className="text-lg font-semibold">Admin · Exercise Images</h1>
             <p className="text-xs text-muted-foreground">
-              {ready}/{total} images ready · {missing} missing
+              {ready}/{total} images ready · {missing} missing · {progressPct}%
             </p>
           </div>
+          {isWorking && (
+            <Badge variant="secondary" className="gap-1">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Working…
+            </Badge>
+          )}
         </div>
       </header>
 
@@ -101,26 +109,41 @@ export default function AdminExerciseImages() {
           <h2 className="font-semibold flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" /> Seeding actions
           </h2>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-secondary/40 py-2">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-xl font-semibold">{total}</p>
+            </div>
+            <div className="rounded-md bg-secondary/40 py-2">
+              <p className="text-xs text-muted-foreground">Ready</p>
+              <p className="text-xl font-semibold text-primary">{ready}</p>
+            </div>
+            <div className="rounded-md bg-secondary/40 py-2">
+              <p className="text-xs text-muted-foreground">Missing</p>
+              <p className="text-xl font-semibold">{missing}</p>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               onClick={() => invokeSeed("Seed missing images", { mode: "missing" }, "missing")}
-              disabled={working !== null || missing === 0}
+              disabled={isWorking || missing === 0}
             >
               {working === "missing" ? "Working…" : `Seed missing (${missing})`}
             </Button>
             <Button
               variant="outline"
               onClick={() => invokeSeed("Regenerate all", { mode: "all" }, "all")}
-              disabled={working !== null}
+              disabled={isWorking}
             >
               {working === "all" ? "Working…" : "Regenerate all"}
             </Button>
-            <Button variant="ghost" onClick={load} disabled={loading || working !== null}>
+            <Button variant="ghost" onClick={load} disabled={loading || isWorking}>
               <RefreshCw className="h-4 w-4 mr-1" /> Refresh
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Generated images are stored permanently. Normal app usage will not call AI again.
+            Generated images are stored permanently in the exercise-images bucket using deterministic
+            filenames. Normal app usage never calls AI image generation.
           </p>
         </Card>
 
