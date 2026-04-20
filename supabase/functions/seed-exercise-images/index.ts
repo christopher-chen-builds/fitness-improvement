@@ -14,7 +14,16 @@ const corsHeaders = {
 const BUCKET = "exercise-images";
 
 function buildPrompt(exerciseName: string) {
+  // Standard thumbnail style — keep identical for every exercise so the library is visually consistent.
   return `Minimal fitness exercise illustration, black background, clean white/light-blue figure, showing ${exerciseName}, simple gym equipment, high contrast, square composition, app icon style, no text, no watermark.`;
+}
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 function dataUrlToBytes(dataUrl: string): { bytes: Uint8Array; contentType: string } {
@@ -98,7 +107,9 @@ serve(async (req) => {
         const dataUrl = await generateOne(row.exercise_name, AI_API_KEY, model);
         const { bytes, contentType } = dataUrlToBytes(dataUrl);
         const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
-        const path = `${row.id}.${ext}`;
+        // Deterministic filename: <slug>-<id>.<ext> so the same exercise always
+        // maps to the same asset and renames don't orphan files.
+        const path = `${slugify(row.exercise_name)}-${row.id}.${ext}`;
         const { error: upErr } = await admin.storage
           .from(BUCKET)
           .upload(path, bytes, { contentType, upsert: true });
