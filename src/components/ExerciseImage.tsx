@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import { Dumbbell } from "lucide-react";
-import { generateExerciseImage, getCachedExerciseImage } from "@/services/exerciseImages";
+import { getExerciseImageUrl, getCachedExerciseImage } from "@/services/exerciseImages";
 
 interface Props {
   exerciseId: string;
@@ -21,13 +21,13 @@ export default function ExerciseImage({ exerciseId, exerciseName, className = ""
   useEffect(() => {
     if (!imgSrc && !failed) {
       setLoading(true);
-      generateExerciseImage(exerciseId, exerciseName).then((url) => {
+      getExerciseImageUrl(exerciseId).then((url) => {
         if (url) setImgSrc(url);
         else setFailed(true);
         setLoading(false);
       });
     }
-  }, [exerciseId, exerciseName, imgSrc, failed]);
+  }, [exerciseId, imgSrc, failed]);
 
   const sizeClasses = size === "lg" ? "w-full h-48" : "w-16 h-16";
   const iconSize = size === "lg" ? "h-12 w-12" : "h-7 w-7";
