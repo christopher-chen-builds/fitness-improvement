@@ -1,83 +1,77 @@
 /**
- * AI-powered exercise image generation service.
- * Uses a backend edge function (configurable AI endpoint).
- * Caches results in localStorage to minimize API calls.
+ * Static exercise image lookup.
+ * Reads image_url from the `exercises` table — no runtime AI generation.
+ * Cached in-memory + localStorage to minimize DB hits.
  */
-
 import { supabase } from "@/integrations/supabase/client";
-import { config } from "@/lib/config";
 
-const CACHE_PREFIX = "exercise-img-";
+const CACHE_PREFIX = "exercise-img-url-";
+const memCache = new Map<string, string | null>();
+let allLoaded = false;
+let loadPromise: Promise<void> | null = null;
 
-// In-flight request deduplication
-const pendingRequests = new Map<string, Promise<string | null>>();
-
-function getCachedImage(exerciseId: string): string | null {
+function readCache(id: string): string | null | undefined {
+  if (memCache.has(id)) return memCache.get(id);
   try {
-    return localStorage.getItem(CACHE_PREFIX + exerciseId);
-  } catch {
-    return null;
-  }
+    const v = localStorage.getItem(CACHE_PREFIX + id);
+    if (v) {
+      memCache.set(id, v);
+      return v;
+    }
+  } catch {}
+  return undefined;
 }
 
-function setCachedImage(exerciseId: string, url: string): void {
+function writeCache(id: string, url: string | null) {
+  memCache.set(id, url);
   try {
-    localStorage.setItem(CACHE_PREFIX + exerciseId, url);
-  } catch {
-    // Storage full — silently fail
-  }
+    if (url) localStorage.setItem(CACHE_PREFIX + id, url);
+  } catch {}
 }
 
-/**
- * Generate an exercise image via the AI edge function.
- * Returns the base64 data URL on success, or null on failure.
- * Results are cached in localStorage.
- */
-export async function generateExerciseImage(
-  exerciseId: string,
-  exerciseName: string
-): Promise<string | null> {
-  // Skip if AI images are disabled via env var
-  if (!config.features.aiImages) return null;
-
-  // 1. Check localStorage cache
-  const cached = getCachedImage(exerciseId);
-  if (cached) return cached;
-
-  // 2. Deduplicate in-flight requests
-  if (pendingRequests.has(exerciseId)) {
-    return pendingRequests.get(exerciseId)!;
-  }
-
-  const request = (async (): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "generate-exercise-image",
-        { body: { exerciseName } }
-      );
-
-      if (error || !data?.imageUrl) {
-        console.warn(`Image generation failed for ${exerciseName}:`, error);
-        return null;
-      }
-
-      setCachedImage(exerciseId, data.imageUrl);
-      return data.imageUrl;
-    } catch (err) {
-      console.warn(`Image generation error for ${exerciseName}:`, err);
-      return null;
-    } finally {
-      pendingRequests.delete(exerciseId);
+async function loadAll(): Promise<void> {
+  if (allLoaded) return;
+  if (loadPromise) return loadPromise;
+  loadPromise = (async () => {
+    const { data, error } = await supabase.from("exercises").select("id, image_url");
+    if (!error && data) {
+      for (const row of data) writeCache(row.id, row.image_url);
+      allLoaded = true;
     }
   })();
-
-  pendingRequests.set(exerciseId, request);
-  return request;
+  return loadPromise;
 }
 
-/**
- * Synchronous check for cached image (no API call).
- */
+/** Get a stored exercise image URL. Never calls AI generation. */
+export async function getExerciseImageUrl(exerciseId: string): Promise<string | null> {
+  const cached = readCache(exerciseId);
+  if (cached !== undefined) return cached;
+  await loadAll();
+  return readCache(exerciseId) ?? null;
+}
+
+/** Synchronous cache check (used for first paint). */
 export function getCachedExerciseImage(exerciseId: string): string | null {
-  return getCachedImage(exerciseId);
+  const v = readCache(exerciseId);
+  return v ?? null;
+}
+
+/** Backwards-compat shim — no longer triggers generation, just looks up the stored URL. */
+export async function generateExerciseImage(exerciseId: string): Promise<string | null> {
+  return getExerciseImageUrl(exerciseId);
+}
+
+/** Clear caches (used after admin re-seed). */
+export function clearExerciseImageCache() {
+  memCache.clear();
+  allLoaded = false;
+  loadPromise = null;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(CACHE_PREFIX)) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch {}
 }

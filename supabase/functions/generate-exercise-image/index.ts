@@ -1,3 +1,7 @@
+// DEPRECATED: This function is no longer called from the runtime app.
+// Image generation now happens once via the seed-exercise-images admin function,
+// which stores results permanently in the exercise-images storage bucket.
+// Kept for backward compatibility / direct manual testing only.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -19,15 +23,13 @@ serve(async (req) => {
       );
     }
 
-    // AI endpoint is configurable via env var for self-hosting.
-    // Default: Lovable AI gateway. Override with any OpenAI-compatible endpoint.
     const AI_API_URL = Deno.env.get("AI_API_URL") || "https://ai.gateway.lovable.dev/v1/chat/completions";
     const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
     const AI_MODEL = Deno.env.get("AI_IMAGE_MODEL") || "google/gemini-2.5-flash-image";
 
     if (!AI_API_KEY) throw new Error("AI_API_KEY (or LOVABLE_API_KEY) not configured");
 
-    const prompt = `Generate an image of the "${exerciseName}" exercise. Professional 3D medical-style fitness illustration, white glowing figure on deep black background, highlighting specific muscle groups in blue #007AFF, high-contrast, minimalist, 8k resolution. On a solid black background.`;
+    const prompt = `Minimal fitness exercise illustration, black background, clean white/light-blue figure, showing ${exerciseName}, simple gym equipment, high contrast, square composition, app icon style, no text, no watermark.`;
 
     const response = await fetch(AI_API_URL, {
       method: "POST",

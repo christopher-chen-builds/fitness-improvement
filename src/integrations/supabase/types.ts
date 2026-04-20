@@ -67,6 +67,45 @@ export type Database = {
           },
         ]
       }
+      exercises: {
+        Row: {
+          created_at: string
+          equipment: string | null
+          exercise_name: string
+          id: string
+          image_last_generated_at: string | null
+          image_prompt: string | null
+          image_status: string
+          image_url: string | null
+          muscle_group: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipment?: string | null
+          exercise_name: string
+          id: string
+          image_last_generated_at?: string | null
+          image_prompt?: string | null
+          image_status?: string
+          image_url?: string | null
+          muscle_group: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipment?: string | null
+          exercise_name?: string
+          id?: string
+          image_last_generated_at?: string | null
+          image_prompt?: string | null
+          image_status?: string
+          image_url?: string | null
+          muscle_group?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
