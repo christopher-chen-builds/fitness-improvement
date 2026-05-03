@@ -51,12 +51,42 @@ export const MIXIN_REPOSITORY: MixInCategory[] = [
     ],
   },
   {
-    category: "Arms",
+    category: "Biceps",
     exercises: [
       { id: "mix-preacher", name: "Preacher Curls", sets: 4, reps: 10, weight: 30, unit: "lbs", cue: "Press armpits into pad, lower fully, curl to top." },
       { id: "mix-cable-curl", name: "Cable Bicep Curls", sets: 4, reps: 10, weight: 25, unit: "lbs", cue: "Constant tension, squeeze at top, slow negative." },
+    ],
+  },
+  {
+    category: "Triceps",
+    exercises: [
       { id: "mix-oh-tri", name: "Overhead Tricep Extensions", sets: 4, reps: 10, weight: 25, unit: "lbs", cue: "Hold dumbbell overhead, lower behind head, extend fully." },
       { id: "mix-kickback", name: "Tricep Kickbacks", sets: 4, reps: 10, weight: 12.5, unit: "lbs", cue: "Hinge forward, extend arm fully behind you, squeeze tricep.", perHand: true },
     ],
   },
 ];
+
+/**
+ * Maps each baseline exercise ID to the mix-in category it can be swapped with.
+ * This ensures swaps stay within the correct muscle group per exercise.
+ */
+export const EXERCISE_CATEGORY_MAP: Record<string, string> = {
+  // Day 1: Chest & Triceps
+  "inc-bench": "Chest",
+  "db-bench": "Chest",
+  "inc-fly": "Chest",
+  "skull": "Triceps",
+  "rope-ext": "Triceps",
+  // Day 2: Back & Biceps
+  "lat-pull": "Back",
+  "db-row": "Back",
+  "db-curl": "Biceps",
+  "hammer": "Biceps",
+  "knee-tuck": "", // No swaps for abs
+  // Day 3: Legs, Shoulders, Back
+  "squat": "Legs",
+  "ohp": "Shoulders",
+  "db-shoulder": "Shoulders",
+  "lunge": "Legs",
+  "cable-hip": "Legs",
+};
