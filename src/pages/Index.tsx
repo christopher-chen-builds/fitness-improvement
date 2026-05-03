@@ -18,7 +18,7 @@ import { adjustWeight, applyWeightOverrides } from "@/lib/trainer-logic";
 import { logWorkout as logWorkoutService, getWorkoutLogs, getNextRotation, getWorkoutHistory } from "@/services/workoutService";
 import { applyEquipmentSubstitutions, getEquipmentChecklist, evaluateProgression } from "@/lib/workout-logic";
 import { generateMixedWorkout } from "@/services/mixWorkoutService";
-import { MIXIN_REPOSITORY } from "@/lib/mixinData";
+import { MIXIN_REPOSITORY, EXERCISE_CATEGORY_MAP } from "@/lib/mixinData";
 
 type Tab = "workout" | "planning" | "history" | "profile";
 
@@ -47,42 +47,32 @@ const Index = () => {
     // Always reset to baseline first, then perform a fresh swap
     const baseline = [...currentDay.exercises];
     const swapCount = Math.random() < 0.5 ? 1 : 2;
-    const indices = Array.from({ length: baseline.length }, (_, i) => i);
-    // Shuffle indices and pick swapCount
+    // Only consider exercises that have a swap category
+    const swappableIndices = baseline
+      .map((ex, i) => ({ i, cat: EXERCISE_CATEGORY_MAP[ex.id] }))
+      .filter((x) => x.cat)
+      .map((x) => x.i);
+    const indices = [...swappableIndices];
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
-    const toSwap = indices.slice(0, swapCount);
+    const toSwap = indices.slice(0, Math.min(swapCount, indices.length));
     const newSwappedIds = new Set<string>();
 
     const mixed = baseline.map((ex, idx) => {
       if (!toSwap.includes(idx)) return ex;
 
-      // Find the muscle group for this exercise
-      const muscleGroup = currentDay.muscleGroups.find((mg) => {
-        const mgLower = mg.toLowerCase();
-        return MIXIN_REPOSITORY.some(
-          (cat) =>
-            (cat.category.toLowerCase() === mgLower ||
-              (mgLower === "triceps" && cat.category === "Arms") ||
-              (mgLower === "biceps" && cat.category === "Arms")) &&
-            cat.exercises.length > 0
-        );
-      });
+      const category = EXERCISE_CATEGORY_MAP[ex.id];
+      if (!category) return ex;
 
-      if (!muscleGroup) return ex;
-
-      const matchingCat = MIXIN_REPOSITORY.find(
-        (cat) =>
-          cat.category.toLowerCase() === muscleGroup.toLowerCase() ||
-          (muscleGroup === "Triceps" && cat.category === "Arms") ||
-          (muscleGroup === "Biceps" && cat.category === "Arms")
-      );
-
+      const matchingCat = MIXIN_REPOSITORY.find((cat) => cat.category === category);
       if (!matchingCat || matchingCat.exercises.length === 0) return ex;
 
-      const replacement = matchingCat.exercises[Math.floor(Math.random() * matchingCat.exercises.length)];
+      // Pick a random replacement that isn't the same as the original
+      const candidates = matchingCat.exercises.filter((c) => c.id !== ex.id);
+      if (candidates.length === 0) return ex;
+      const replacement = candidates[Math.floor(Math.random() * candidates.length)];
       newSwappedIds.add(replacement.id);
       return replacement;
     });
@@ -287,12 +277,6 @@ function WorkoutPreview({
           </Button>
         </div>
       </div>
-
-      {isMixed && (
-        <Badge className="bg-primary/20 text-primary border-0 text-xs">
-          ✨ AI-generated variation
-        </Badge>
-      )}
 
       <div className="space-y-2">
         {exercises.map((ex) => (
