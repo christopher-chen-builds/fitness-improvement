@@ -59,6 +59,8 @@ const Index = () => {
     const toSwap = indices.slice(0, Math.min(swapCount, indices.length));
     const newSwappedIds = new Set<string>();
 
+    const baselineIds = new Set(baseline.map((e) => e.id));
+
     const mixed = baseline.map((ex, idx) => {
       if (!toSwap.includes(idx)) return ex;
 
@@ -68,8 +70,8 @@ const Index = () => {
       const matchingCat = MIXIN_REPOSITORY.find((cat) => cat.category === category);
       if (!matchingCat || matchingCat.exercises.length === 0) return ex;
 
-      // Pick a random replacement that isn't the same as the original
-      const candidates = matchingCat.exercises.filter((c) => c.id !== ex.id);
+      // Pick a random replacement that isn't already in the workout
+      const candidates = matchingCat.exercises.filter((c) => !baselineIds.has(c.id) && !newSwappedIds.has(c.id));
       if (candidates.length === 0) return ex;
       const replacement = candidates[Math.floor(Math.random() * candidates.length)];
       newSwappedIds.add(replacement.id);
