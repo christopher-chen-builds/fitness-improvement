@@ -128,7 +128,7 @@ export const EXERCISE_CATEGORY_MAP: Record<string, string> = {
   "db-row": "Back",
   "db-curl": "Biceps",
   "hammer": "Biceps",
-  "knee-tuck": "", // No swaps for abs
+  "knee-tuck": "Abs",
   // Day 3: Legs, Shoulders, Back
   "squat": "Legs",
   "ohp": "Shoulders",
